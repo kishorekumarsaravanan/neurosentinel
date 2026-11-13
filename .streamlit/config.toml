@@ -1,0 +1,86 @@
+# NeuroSentinel theme
+# Light: IBM Carbon tokens (gray / blue-60 / red-60) on a warm paper base
+# Dark : IBM Carbon g100 theme (gray-100 / blue-40 / red-50)
+# Type : Newsreader (headings), IBM Plex Sans (UI), IBM Plex Mono (data). All OFL, served locally from ./static
+# The in-app toggle (sidebar) switches between the two presets below.
+
+[theme]
+font = "IBM Plex Sans"
+headingFont = "Newsreader"
+codeFont = "IBM Plex Mono"
+baseFontSize = 15
+baseRadius = "4px"
+showWidgetBorder = true
+
+[[theme.fontFaces]]
+family = "IBM Plex Sans"
+url = "app/static/fonts/PlexSans-var.woff2"
+weight = "100 700"
+
+[[theme.fontFaces]]
+family = "Newsreader"
+url = "app/static/fonts/Newsreader-var.woff2"
+weight = "200 800"
+
+[[theme.fontFaces]]
+family = "Newsreader"
+url = "app/static/fonts/Newsreader-italic-var.woff2"
+weight = "200 800"
+style = "italic"
+
+[[theme.fontFaces]]
+family = "IBM Plex Mono"
+url = "app/static/fonts/PlexMono-400.woff2"
+weight = 400
+
+[[theme.fontFaces]]
+family = "IBM Plex Mono"
+url = "app/static/fonts/PlexMono-500.woff2"
+weight = 500
+
+[[theme.fontFaces]]
+family = "IBM Plex Mono"
+url = "app/static/fonts/PlexMono-600.woff2"
+weight = 600
+
+[theme.light]
+primaryColor = "#0F62FE"
+backgroundColor = "#F6F5F1"
+secondaryBackgroundColor = "#ECEAE4"
+textColor = "#161616"
+linkColor = "#0F62FE"
+borderColor = "#DCD9D1"
+
+[theme.light.sidebar]
+backgroundColor = "#161616"
+secondaryBackgroundColor = "#262626"
+textColor = "#F4F4F4"
+primaryColor = "#78A9FF"
+borderColor = "#393939"
+
+[theme.dark]
+primaryColor = "#4589FF"
+backgroundColor = "#161616"
+secondaryBackgroundColor = "#262626"
+textColor = "#F4F4F4"
+linkColor = "#78A9FF"
+borderColor = "#393939"
+
+[theme.dark.sidebar]
+backgroundColor = "#0E0E0E"
+secondaryBackgroundColor = "#262626"
+textColor = "#F4F4F4"
+primaryColor = "#78A9FF"
+borderColor = "#393939"
+
+[server]
+headless = true
+maxUploadSize = 300
+runOnSave = false
+enableStaticServing = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"

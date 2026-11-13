@@ -1,0 +1,16 @@
+# Raw CHB-MIT EEG (~0.9 GB) - fetch with: bash scripts/download_data.sh
+data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local tooling / OS
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

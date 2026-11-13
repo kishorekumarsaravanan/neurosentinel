@@ -1,0 +1,40 @@
+[12:35:51] === chb01: building training set
+[12:35:52]    chb01_01: 0 seizure / 241 background windows
+[12:35:53]    chb01_02: 0 seizure / 235 background windows
+[12:35:54]    chb01_03: 37 seizure / 230 background windows
+[12:35:55]    chb01_04: 24 seizure / 243 background windows
+[12:35:56]    chb01_05: 0 seizure / 247 background windows
+[12:35:57]    chb01_15: 37 seizure / 238 background windows
+[12:35:58]    chb01_16: 48 seizure / 248 background windows
+[12:35:59]    chb01_18: 87 seizure / 217 background windows
+[12:35:59]    train windows: 2132 (233 seizure)
+[12:36:02]    training SVM
+[12:36:02]    training Random Forest
+[12:36:04]    training 1D-CNN
+[12:38:45]    streaming unseen record chb01_06
+[12:38:54]    streaming unseen record chb01_21
+[12:39:04]    streaming unseen record chb01_26
+[12:39:09]    svm  sens=0.959 spec=1.000 f1=0.969 auc=0.999 | events 2/2 lat=7.5 FA/h=0.38
+[12:39:09]    rf   sens=0.939 spec=0.998 f1=0.920 auc=0.999 | events 2/2 lat=8.5 FA/h=0.76
+[12:39:09]    cnn  sens=0.980 spec=0.998 f1=0.950 auc=0.999 | events 2/2 lat=5.0 FA/h=0.76
+[12:39:09] === chb03: building training set
+[12:39:11]    chb03_01: 49 seizure / 297 background windows
+[12:39:11]    chb03_02: 62 seizure / 292 background windows
+[12:39:12]    chb03_03: 66 seizure / 279 background windows
+[12:39:13]    chb03_04: 49 seizure / 313 background windows
+[12:39:14]    chb03_05: 0 seizure / 315 background windows
+[12:39:14]    chb03_06: 0 seizure / 310 background windows
+[12:39:15]    chb03_34: 44 seizure / 324 background windows
+[12:39:15]    train windows: 2400 (270 seizure)
+[12:39:18]    training SVM
+[12:39:18]    training Random Forest
+[12:39:19]    training 1D-CNN
+[12:41:52]    streaming unseen record chb03_07
+[12:41:59]    streaming unseen record chb03_35
+[12:42:06]    streaming unseen record chb03_36
+[12:42:14]    svm  sens=0.767 spec=1.000 f1=0.852 auc=0.999 | events 2/2 lat=4.0 FA/h=0.00
+[12:42:14]    rf   sens=0.900 spec=0.996 f1=0.783 auc=0.999 | events 2/2 lat=4.5 FA/h=0.67
+[12:42:14]    cnn  sens=0.867 spec=0.999 f1=0.867 auc=0.999 | events 2/2 lat=4.0 FA/h=0.33
+[12:42:14] exported 6 monitor clips and 6 game rounds
+[12:42:14] done -> artifacts/
+train exit=0

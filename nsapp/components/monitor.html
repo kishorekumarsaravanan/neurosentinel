@@ -1,0 +1,323 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+/*__CSS__*/
+#root { position: relative; height: 100vh; padding: 0; display: grid; gap: 0; background: var(--paper);
+  grid-template-rows: 46px 1fr 50px 76px; }
+.top { display: flex; align-items: center; gap: 18px; padding: 0 16px; background: var(--chrome); color: #F4F4F4; transition: background .2s; }
+.top.alarm { background: var(--seizure); }
+.brand, .meta, .pill, .clock { white-space: nowrap; }
+.brand { display: flex; align-items: center; gap: 9px; font-family: 'IBM Plex Mono'; font-weight: 500; letter-spacing: .12em; font-size: 11.5px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #42BE65; animation: blink 1.6s infinite; }
+.top.alarm .dot { background: #fff; }
+@keyframes blink { 50% { opacity: .3 } }
+.meta { color: #C6C6C6; font-size: 12.5px; font-family: 'IBM Plex Mono'; overflow: hidden; text-overflow: ellipsis; }
+.meta b { color: #fff; font-weight: 500; }
+.clock { font-family: 'IBM Plex Mono'; font-size: 20px; font-weight: 500; letter-spacing: .02em; }
+.pill { font-family: 'IBM Plex Mono'; font-weight: 500; font-size: 11.5px; letter-spacing: .1em; padding: 5px 10px; border: 1px solid #6F6F6F; color: #C6C6C6;
+  display: inline-flex; align-items: center; gap: 6px; }
+.pill.alarm { color: var(--seizure); background: #fff; border-color: #fff; animation: flash 1s infinite; }
+.pill.warn { color: #F1C21B; border-color: #F1C21B; }
+@keyframes flash { 50% { opacity: .55 } }
+.spacer { flex: 1; }
+.ctrl { display: flex; gap: 6px; align-items: center; padding: 0 12px; border-top: 1px solid var(--line); background: var(--surface); }
+.ctrl button.ns { padding: 6px 11px; font-size: 12.5px; white-space: nowrap; }
+.main { display: grid; grid-template-columns: 1fr 320px; gap: 0; min-height: 0; }
+.left { display: grid; grid-template-rows: 1fr 148px; gap: 0; min-height: 0; border-right: 1px solid var(--line); }
+.right { display: grid; grid-template-rows: 248px auto 1fr; gap: 0; min-height: 0; background: var(--surface); }
+.box { position: relative; min-height: 0; background: var(--surface); overflow: hidden; }
+.left > * + *, .right > * + * { border-top: 1px solid var(--line); }
+.box .label { position: absolute; top: 9px; left: 12px; z-index: 2; }
+.sentinels { display: grid; gap: 0; }
+.sent { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 10px; padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--line); border-left: 3px solid transparent; transition: background .2s, border-color .2s; }
+.sent .g { display: grid; place-items: center; }
+.sent .nm { font-weight: 500; font-size: 13.5px; }
+.sent .st { font-family: 'IBM Plex Mono'; font-size: 10.5px; letter-spacing: .03em; color: var(--ink3); }
+.sent .pc { font-family: 'IBM Plex Mono'; font-size: 20px; font-weight: 500; text-align: right; }
+.sent .bar { grid-column: 1 / 4; height: 3px; background: var(--inset); overflow: hidden; }
+.sent .bar i { display: block; height: 100%; width: 0; transition: width .2s; }
+.sent.alarm { background: var(--alarm-bg); border-left-color: var(--seizure); }
+.sent.alarm .st { color: var(--seizure); }
+.consensus { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; }
+.votes { display: flex; gap: 4px; }
+.votes span { width: 24px; height: 8px; background: var(--inset); border: 1px solid var(--line); transition: all .2s; }
+.log { overflow: hidden; padding: 30px 14px 10px; font-size: 12.5px; position: relative; }
+.log #log > div { padding: 6px 0; border-bottom: 1px solid var(--inset); display: grid; grid-template-columns: 42px 18px 1fr; gap: 6px; align-items: start; animation: fadein .3s; }
+.log .t { font-family: 'IBM Plex Mono'; color: var(--ink3); font-size: 11.5px; padding-top: 1px; }
+@keyframes fadein { from { opacity: 0 } }
+.comment { position: absolute; left: 70px; right: 10px; bottom: 8px; z-index: 3; font-size: 12.5px; line-height: 1.4; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); padding: 6px 12px; min-height: 40px; display: flex; align-items: center; gap: 12px; }
+.comment.alarm { border-left-color: var(--seizure); }
+.comment b { font-family: 'IBM Plex Mono'; font-weight: 500; color: var(--ink2); letter-spacing: .1em; font-size: 10.5px; white-space: nowrap; }
+.scrub { position: relative; cursor: pointer; border-top: 1px solid var(--line); background: var(--surface); }
+</style></head>
+<body>
+<div id="root">
+  <div class="top" id="topbar">
+    <div class="brand"><div class="dot"></div>REVIEW STATION</div>
+    <div class="meta"><b id="pat"></b> / <b id="rec"></b> &nbsp;<span id="ttl"></span></div>
+    <div class="spacer"></div>
+    <div class="clock" id="clock">00:00</div>
+    <div class="pill" id="status">MONITORING</div>
+  </div>
+  <div class="main">
+    <div class="left">
+      <div class="box"><canvas class="cv" id="eeg"></canvas>
+        <div class="comment" id="comment"><b>ASSESSMENT</b><span id="ctext">Press play to start the replay.</span></div></div>
+      <div class="box"><div class="label">P(seizure), last 60 s · alarm when 3 of 4 s exceed 50 %</div><canvas class="cv" id="river"></canvas></div>
+    </div>
+    <div class="right">
+      <div class="box"><div class="label">Scalp activity, last 1 s</div><canvas class="cv" id="head"></canvas></div>
+      <div>
+        <div class="sentinels" id="sentinels"></div>
+        <div class="consensus"><span class="label">Consensus (2 of 3 to alarm)</span>
+          <div class="votes" id="votes"><span></span><span></span><span></span></div></div>
+      </div>
+      <div class="log" id="logbox"><div class="label" style="position:absolute;top:9px;left:14px">Event log</div><div id="log"></div></div>
+    </div>
+  </div>
+  <div class="ctrl">
+    <button class="ns primary" id="play" style="min-width:92px"></button>
+    <span class="label" style="margin-left:10px">Speed</span><span id="speeds" style="display:flex;gap:4px"></span>
+    <button class="ns" id="jump" title="Jump to 25 s before the annotated onset"></button>
+    <div class="spacer"></div>
+    <button class="ns" id="gain" title="Amplitude scale"></button>
+    <button class="ns on" id="truth" title="Shade the neurologist's annotation"></button>
+    <button class="ns" id="snd" title="Sonify the EEG and play alarm tones"></button>
+    <span class="label" style="margin-left:6px">Space: play / pause</span>
+  </div>
+  <div class="scrub"><canvas class="cv" id="scrub"></canvas></div>
+</div>
+<script>
+/*__JS__*/
+const D = __DATA__;
+const clip = D.clip;
+const { C, MODELS } = NS;
+const I = (n, sz = 15) => NS.icon(n, sz);
+const ch = clip.channels, NCH = ch.length, FS = clip.fs, DUR = clip.duration, VIS = 10;
+const eeg = NS.decodeEEG(clip.eeg, NCH, clip.scale);
+const P = clip.probs;
+const AL = {}; MODELS.forEach(m => AL[m.key] = NS.alarms(P[m.key]));
+const SZ = clip.seizures;
+document.getElementById('pat').textContent = clip.patient;
+document.getElementById('rec').textContent = clip.record;
+document.getElementById('ttl').textContent = clip.kind === 'seizure' ? '' : '(control)';
+
+// ---- baseline per channel (first 60 s or whole clip)
+const baseEnd = Math.min(eeg[0].length, FS * (SZ.length ? Math.max(20, Math.min(60, SZ[0][0] - 5)) : 60));
+const base = eeg.map(a => { let s = 0; for (let i = 0; i < baseEnd; i++) s += a[i] * a[i]; return Math.sqrt(s / baseEnd) + 1e-3; });
+// per-second energy for scrubber sparkline
+const nsec = Math.floor(DUR);
+const energy = new Float32Array(nsec);
+for (let s = 0; s < nsec; s++) { let acc = 0; for (let c = 0; c < NCH; c++) { const a = eeg[c]; for (let i = s * FS; i < (s + 1) * FS && i < a.length; i += 4) acc += Math.abs(a[i]) / base[c]; } energy[s] = acc; }
+const emax = Math.max(...energy);
+
+// ---- state
+let t = 0, playing = false, speed = D.speed || 2, gain = 1, truth = true, sound = false, last = null, lastCommentT = -99;
+const fired = {}, logged = new Set();
+let headVals = new Array(NCH).fill(0.1);
+const firstDet = {};
+MODELS.forEach(m => {
+  firstDet[m.key] = null;
+  if (!SZ.length) return;
+  const [s, e] = SZ[0];
+  for (let i = 0; i < P.t.length; i++) if (AL[m.key][i] && P.t[i] >= s && P.t[i] <= e + 10) { firstDet[m.key] = P.t[i] - s; break; }
+});
+
+// ---- UI construction
+const speedsEl = document.getElementById('speeds');
+[1, 2, 5, 10].forEach(s => { const b = document.createElement('button'); b.className = 'ns' + (s === speed ? ' on' : ''); b.textContent = s + '×';
+  b.onclick = () => { speed = s; [...speedsEl.children].forEach(x => x.classList.toggle('on', x === b)); }; speedsEl.appendChild(b); });
+const sentEl = document.getElementById('sentinels');
+MODELS.forEach(m => { sentEl.insertAdjacentHTML('beforeend', `<div class="sent" id="s_${m.key}" style="--glow:${m.color}">
+  <div class="g" style="color:${m.color}">${I(m.icon, 20)}</div><div><div class="nm">${m.full}</div><div class="st" id="st_${m.key}">standby</div></div>
+  <div class="pc" id="pc_${m.key}">0%</div><div class="bar"><i id="br_${m.key}" style="background:${m.color}"></i></div></div>`); });
+const playBtn = document.getElementById('play');
+const setPlay = s => playBtn.innerHTML = s === 'pause' ? I('pause') + 'Pause' : s === 'replay' ? I('rotate-ccw') + 'Replay' : I('play') + 'Play';
+setPlay('play');
+document.getElementById('jump').innerHTML = I('skip-forward') + 'Jump to pre-onset';
+playBtn.onclick = () => { playing = !playing; setPlay(playing ? 'pause' : 'play'); if (sound) NS.audio(); if (playing) addLog(t, 'play', 'Replay running at ' + speed + '×', C.ink3); };
+document.getElementById('jump').onclick = () => { if (SZ.length) seek(Math.max(0, SZ[0][0] - 25)); else seek(Math.max(0, DUR / 2)); };
+const gainBtn = document.getElementById('gain');
+const setGain = () => gainBtn.innerHTML = I('move-vertical') + 'Gain ×' + gain; setGain();
+gainBtn.onclick = () => { gain = gain >= 4 ? 0.5 : gain * 2; setGain(); };
+const truthBtn = document.getElementById('truth');
+truthBtn.innerHTML = I('pen-line') + 'Annotation';
+truthBtn.onclick = () => { truth = !truth; truthBtn.classList.toggle('on', truth); };
+const sndBtn = document.getElementById('snd');
+let osc = null, og = null, filt = null;
+const setSnd = () => sndBtn.innerHTML = I(sound ? 'volume-2' : 'volume-x') + 'Sound'; setSnd();
+sndBtn.onclick = () => {
+  sound = !sound; sndBtn.classList.toggle('on', sound); setSnd();
+  if (sound && !osc) {
+    const a = NS.audio(); osc = a.createOscillator(); og = a.createGain(); filt = a.createBiquadFilter();
+    osc.type = 'sawtooth'; filt.type = 'lowpass'; filt.frequency.value = 600; og.gain.value = 0;
+    osc.connect(filt).connect(og).connect(a.destination); osc.start();
+  }
+  if (!sound && og) og.gain.value = 0;
+};
+document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); playBtn.click(); } });
+
+function seek(nt) { t = Math.max(0, Math.min(DUR - 0.01, nt)); lastCommentT = -99; }
+const logEl = document.getElementById('log');
+function addLog(time, icon, text, color) {
+  logEl.insertAdjacentHTML('afterbegin', `<div><span class="t">${NS.fmtT(time)}</span><span style="color:${color}">${I(icon, 14)}</span><span>${text}</span></div>`);
+  while (logEl.children.length > 14) logEl.lastChild.remove();
+}
+addLog(0, 'activity', `Monitoring ${clip.record}, ${NCH} bipolar channels`, C.accent);
+
+// ---- helpers
+const idxAt = time => { let lo = 0, hi = P.t.length - 1, r = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (P.t[m] <= time) { r = m; lo = m + 1; } else hi = m - 1; } return r; };
+const REGIONS = {
+  'left temporal chain': [0, 1, 2, 3], 'left parasagittal chain': [4, 5, 6, 7], 'right parasagittal chain': [8, 9, 10, 11],
+  'right temporal chain': [12, 13, 14, 15], 'midline': [16, 17] };
+function commentary(state) {
+  const reg = Object.entries(REGIONS).map(([k, ix]) => [k, ix.reduce((a, i) => a + headVals[i], 0) / ix.length]).sort((a, b) => b[1] - a[1]);
+  const [rname, rv] = reg[0];
+  const mean = headVals.reduce((a, b) => a + b, 0) / NCH;
+  if (state === 'alarm') return `Sustained rhythmic high-amplitude discharges, maximal over the ${rname}. Models agree on an ictal pattern; notify the care team.`;
+  if (state === 'warn') return `Evolving activity over the ${rname}. At least one model is above threshold; awaiting confirmation.`;
+  if (mean > 0.45) return `Amplitude increase over the ${rname} (${(mean * 100).toFixed(0)} % of scale): possible artefact or early change.`;
+  return 'Background rhythm within baseline limits. No epileptiform pattern detected.';
+}
+
+// ---- drawing
+const cvE = document.getElementById('eeg'), cvR = document.getElementById('river'), cvH = document.getElementById('head'), cvS = document.getElementById('scrub');
+let gE, gR, gH, gS;
+function resize() { gE = NS.setupCanvas(cvE); gR = NS.setupCanvas(cvR); gH = NS.setupCanvas(cvH); gS = NS.setupCanvas(cvS); }
+window.addEventListener('resize', resize); resize();
+cvS.addEventListener('click', e => { const r = cvS.getBoundingClientRect(); seek((e.clientX - r.left - 8) / (r.width - 16) * DUR); });
+
+function drawEEG(alarmLevel) {
+  const { ctx, w, h } = gE; ctx.clearRect(0, 0, w, h);
+  const L = 70, R = w - 8, top = 6, bot = h - 74, W = R - L, rowH = (bot - top) / NCH;
+  const t0 = t - VIS;
+  const X = tt => L + (tt - t0) / VIS * W;
+  if (truth) SZ.forEach(([s, e]) => { const a = Math.max(L, X(s)), b = Math.min(R, X(e)); if (b > a) {
+    ctx.fillStyle = C.seizureFill; ctx.fillRect(a, top, b - a, bot - top); ctx.fillStyle = C.seizure; ctx.font = '500 10px IBM Plex Mono';
+    if (X(s) > L) { ctx.fillRect(X(s), top, 1.5, bot - top); ctx.fillText('ANNOTATED ONSET', X(s) + 5, top + 11); } } });
+  ctx.lineWidth = 1;
+  for (let s = Math.ceil(t0 * 5) / 5; s <= t; s += 0.2) { const x = X(s); const major = Math.abs(s - Math.round(s)) < 1e-6;
+    ctx.strokeStyle = major ? C.gridMajor : C.gridMinor; ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bot); ctx.stroke(); }
+  ctx.fillStyle = C.ink3; ctx.font = '10px IBM Plex Mono'; ctx.textAlign = 'center';
+  for (let s = Math.ceil(t0); s <= t; s += 2) if (s >= 0) ctx.fillText(NS.fmtT(s + clip.t0), X(s), bot + 12);
+  const scale = rowH / 220 * gain;   // 220 uV per row at gain 1
+  const i1 = Math.floor(t * FS), i0 = Math.max(0, Math.floor(t0 * FS));
+  const tint = alarmLevel;
+  for (let c = 0; c < NCH; c++) {
+    const y0 = top + rowH * (c + 0.5), a = eeg[c];
+    ctx.textAlign = 'right'; ctx.fillStyle = C.ink2; ctx.font = '10px IBM Plex Mono'; ctx.fillText(ch[c], L - 8, y0 + 3);
+    ctx.strokeStyle = tint > 0 ? C.seizure : C.trace; ctx.lineWidth = 1; ctx.beginPath();
+    let first = true;
+    for (let i = i0; i < i1 && i < a.length; i++) {
+      const x = X(i / FS), y = y0 - Math.max(-rowH * 1.2, Math.min(rowH * 1.2, a[i] * scale));
+      if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  // sweep head
+  ctx.fillStyle = C.accent; ctx.fillRect(R - 1.5, top, 1.5, bot - top);
+  // scale bar
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(12, bot - 4); ctx.lineTo(12, bot - 4 - 100 * scale); ctx.stroke();
+  ctx.textAlign = 'left'; ctx.fillStyle = C.ink2; ctx.fillText('100 µV', 16, bot - 6);
+}
+
+function drawRiver(k) {
+  const { ctx, w, h } = gR; ctx.clearRect(0, 0, w, h);
+  const L = 36, R = w - 10, top = 26, bot = h - 18, W = R - L, H = bot - top, SPAN = 60, t0 = t - SPAN;
+  const X = tt => L + (tt - t0) / SPAN * W, Y = p => bot - p * H;
+  ctx.strokeStyle = C.gridMinor; ctx.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(p => { ctx.beginPath(); ctx.moveTo(L, Y(p)); ctx.lineTo(R, Y(p)); ctx.stroke(); });
+  ctx.fillStyle = C.ink3; ctx.font = '10px IBM Plex Mono'; ctx.textAlign = 'right';
+  [0, 0.5, 1].forEach(p => ctx.fillText((p * 100) + '%', L - 6, Y(p) + 3));
+  if (truth) SZ.forEach(([s, e]) => { const a = Math.max(L, X(s)), b = Math.min(R, X(e)); if (b > a) { ctx.fillStyle = C.seizureFill; ctx.fillRect(a, top, b - a, H); } });
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = C.warn; ctx.beginPath(); ctx.moveTo(L, Y(0.5)); ctx.lineTo(R, Y(0.5)); ctx.stroke(); ctx.setLineDash([]);
+  MODELS.forEach(m => {
+    const arr = P[m.key]; ctx.beginPath(); let started = false, lx = 0;
+    for (let i = 0; i <= k; i++) { if (P.t[i] < t0) continue; const x = X(P.t[i]), y = Y(arr[i]); if (!started) { ctx.moveTo(x, bot); ctx.lineTo(x, y); started = true; } else ctx.lineTo(x, y); lx = x; }
+    if (!started) return;
+    ctx.strokeStyle = m.color; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.lineTo(lx, bot); ctx.closePath(); ctx.fillStyle = NS.hexA(m.color, 0.06); ctx.fill();
+  });
+}
+
+function drawHeadMap(level) {
+  const { ctx, w, h } = gH; ctx.clearRect(0, 0, w, h);
+  const R = Math.min(w, h - 24) / 2 * 0.82;
+  NS.drawHead(ctx, w / 2, h / 2 + 12, R, ch, headVals, { haloColor: level > 0 ? C.seizure : C.cyan });
+}
+
+function drawScrub(k) {
+  const { ctx, w, h } = gS; ctx.clearRect(0, 0, w, h);
+  const L = 8, R = w - 8, W = R - L, X = tt => L + tt / DUR * W;
+  ctx.fillStyle = C.energy; ctx.beginPath(); ctx.moveTo(L, 36);
+  for (let s = 0; s < nsec; s++) ctx.lineTo(X(s), 36 - 30 * energy[s] / emax);
+  ctx.lineTo(R, 36); ctx.fill();
+  SZ.forEach(([s, e]) => { ctx.fillStyle = C.seizureFill2; ctx.fillRect(X(s), 4, X(e) - X(s), 34); });
+  MODELS.forEach((m, j) => { const y = 44 + j * 10; ctx.fillStyle = C.inset; ctx.fillRect(L, y, W, 6);
+    ctx.fillStyle = m.color; for (let i = 0; i < P.t.length; i++) if (AL[m.key][i]) ctx.fillRect(X(P.t[i]) - 0.5, y, Math.max(1.5, W / DUR), 6); });
+  ctx.fillStyle = C.ink; ctx.fillRect(X(t) - 1, 0, 2, h - 14); ctx.beginPath(); ctx.moveTo(X(t) - 5, 0); ctx.lineTo(X(t) + 5, 0); ctx.lineTo(X(t), 6); ctx.fill();
+  ctx.fillStyle = C.ink3; ctx.font = '10px IBM Plex Mono'; ctx.textAlign = 'left';
+  ctx.fillText('Click to seek  ·  grey: signal energy  ·  red: annotated seizure  ·  rows: SVM / Random Forest / 1D-CNN alarms', L, h - 3);
+}
+
+// ---- main loop
+let prevAlarm = false, frame = 0, prevState = '';
+function tick(now) {
+  if (last === null) last = now;
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (playing) { t += dt * speed; if (t >= DUR - 0.02) { t = DUR - 0.02; playing = false; setPlay('replay'); addLog(t, 'circle-check', 'End of clip', C.ink3); } }
+  if (!playing && playBtn.textContent.startsWith('Replay') && t < DUR - 1) setPlay('play');
+  // live channel energy (last 1 s)
+  const i1 = Math.floor(t * FS), i0 = Math.max(0, i1 - FS);
+  for (let c = 0; c < NCH; c++) { let s = 0; const a = eeg[c]; for (let i = i0; i < i1; i++) s += a[i] * a[i];
+    const rms = Math.sqrt(s / Math.max(1, i1 - i0)) + 1e-3; const v = 0.1 + 0.9 * Math.max(0, Math.min(1, Math.log(rms / base[c]) / Math.log(3)));
+    headVals[c] += (v - headVals[c]) * 0.15; }
+  const k = idxAt(t);
+  let nAlarm = 0, anySusp = false;
+  MODELS.forEach(m => {
+    const p = k >= 0 ? P[m.key][k] : 0, al = k >= 0 && AL[m.key][k];
+    nAlarm += al; anySusp = anySusp || p >= 0.5;
+    document.getElementById('pc_' + m.key).textContent = Math.round(p * 100) + '%';
+    document.getElementById('br_' + m.key).style.width = (p * 100) + '%';
+    const det = firstDet[m.key];
+    let st = al ? 'alarm raised' : p >= 0.5 ? 'suspicious' : p >= 0.25 ? 'watching' : 'calm';
+    if (det !== null && SZ.length && t >= SZ[0][0] + det) st += ` · caught onset +${det.toFixed(0)} s`;
+    document.getElementById('st_' + m.key).textContent = st;
+    document.getElementById('s_' + m.key).classList.toggle('alarm', !!al);
+    const key = 'al_' + m.key + '_' + (k >= 0 ? (AL[m.key].slice(0, k + 1).lastIndexOf(false)) : -1);
+    if (al && !logged.has(key)) { logged.add(key); const inSz = SZ.some(([s, e]) => t >= s - 30 && t <= e + 60);
+      addLog(t, inSz ? 'siren' : 'triangle-alert', `${m.full} alarm${inSz ? (det !== null ? ` · latency ${det.toFixed(0)} s` : '') : ' · no seizure annotated (false alarm)'}`, m.color); }
+  });
+  SZ.forEach(([s, e], j) => { if (t >= s && !logged.has('on' + j)) { logged.add('on' + j); addLog(s, 'zap', 'Annotated seizure onset (neurologist)', C.seizure); }
+    if (t >= e && !logged.has('off' + j)) { logged.add('off' + j); addLog(e, 'circle-check', `Seizure ended after ${(e - s).toFixed(0)} s`, C.seizure); } });
+  const alarm = nAlarm >= 2;
+  [...document.getElementById('votes').children].forEach((el, i) => { el.style.background = i < nAlarm ? C.seizure : C.inset; el.style.borderColor = i < nAlarm ? C.seizure : C.line; });
+  const stEl = document.getElementById('status');
+  stEl.className = 'pill' + (alarm ? ' alarm' : anySusp ? ' warn' : '');
+  stEl.innerHTML = alarm ? I('siren', 13) + 'SEIZURE ALARM' : anySusp ? I('triangle-alert', 13) + 'SUSPICIOUS' : 'MONITORING';
+  document.getElementById('topbar').classList.toggle('alarm', alarm);
+  document.getElementById('comment').classList.toggle('alarm', alarm);
+  if (alarm && !prevAlarm && sound) NS.siren();
+  prevAlarm = alarm;
+  document.getElementById('clock').textContent = NS.fmtT(t + clip.t0);
+  const cstate = alarm ? 'alarm' : anySusp ? 'warn' : 'calm';
+  if (Math.abs(t - lastCommentT) > 1.5 || cstate !== prevState) { document.getElementById('ctext').textContent = commentary(cstate); lastCommentT = t; prevState = cstate; }
+  // sonification: envelope of the last 60 ms drives pitch + loudness
+  if (sound && og) {
+    const j1 = Math.floor(t * FS), j0 = Math.max(0, j1 - Math.round(0.06 * FS)); let env = 0;
+    for (let c = 0; c < NCH; c++) { const a = eeg[c]; for (let i = j0; i < j1; i++) env += Math.abs(a[i]) / base[c]; }
+    env /= NCH * Math.max(1, j1 - j0);
+    const a = NS.audio(), now2 = a.currentTime, x = Math.min(1, Math.max(0, (env - 0.8) / 4));
+    og.gain.setTargetAtTime(playing ? 0.015 + 0.13 * x : 0, now2, 0.02);
+    osc.frequency.setTargetAtTime(90 + 360 * x, now2, 0.02); filt.frequency.setTargetAtTime(300 + 2400 * x, now2, 0.03);
+  }
+  const level = alarm ? 1 : 0;
+  drawEEG(level); drawRiver(k); if (frame++ % 2 === 0) drawHeadMap(level); drawScrub(k);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+if (D.autoplay) setTimeout(() => playBtn.click(), 400);
+</script>
+</body></html>

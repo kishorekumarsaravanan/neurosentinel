@@ -1,0 +1,218 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+/*__CSS__*/
+#root { height: 100vh; position: relative; background: var(--surface); }
+.screen { position: absolute; inset: 0; display: none; }
+.screen.on { display: flex; }
+#intro { flex-direction: column; align-items: flex-start; justify-content: center; gap: 18px; padding: 0 56px; }
+.eyebrow { font-family: 'IBM Plex Mono'; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink2); display: flex; align-items: center; gap: 10px; }
+.eyebrow i { width: 28px; height: 1px; background: var(--ink2); display: inline-block; }
+h1 { font-family: 'Newsreader', Georgia, serif; font-weight: 450; font-size: 56px; line-height: 1; margin: 0; letter-spacing: -0.02em; }
+h1 em { color: var(--seizure); }
+.sub { color: var(--ink2); max-width: 680px; line-height: 1.6; font-size: 15px; }
+.sub b { color: var(--ink); font-weight: 600; }
+.tips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 6px 0; border: 1px solid var(--line); width: 100%; max-width: 980px; }
+.tip { padding: 14px 16px; border-right: 1px solid var(--line); font-size: 13px; color: var(--ink2); line-height: 1.5; }
+.tip:last-child { border-right: 0; }
+.tip b { display: block; font-family: 'Newsreader'; font-weight: 500; color: var(--ink); font-size: 19px; margin: 2px 0 4px; }
+.tip .n { font-family: 'IBM Plex Mono'; color: var(--accent); font-size: 12px; }
+.vs { display: flex; gap: 8px; align-items: center; font-size: 13.5px; }
+.chip { padding: 5px 10px; border: 1px solid var(--line); display: inline-flex; gap: 6px; align-items: center; font-weight: 500; }
+.row { display: flex; gap: 8px; align-items: center; }
+.big { font-size: 15px !important; padding: 11px 22px !important; }
+#play { flex-direction: column; }
+.hud { display: flex; align-items: center; gap: 28px; padding: 10px 18px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.hud .v { font-family: 'IBM Plex Mono'; font-size: 20px; font-weight: 500; }
+.prog { flex: 1; height: 3px; background: var(--inset); overflow: hidden; }
+.prog i { display: block; height: 100%; width: 0; background: var(--ink); }
+.stage { flex: 1; position: relative; background: var(--surface); }
+#callBtn { position: absolute; right: 24px; bottom: 30px; z-index: 4; font-family: 'IBM Plex Sans'; font-weight: 600; font-size: 17px; letter-spacing: .02em;
+  color: #fff; background: var(--seizure); border: none; border-radius: 3px; padding: 15px 26px; cursor: pointer; display: inline-flex; gap: 10px; align-items: center;
+  box-shadow: 0 2px 0 #A2191F; transition: transform .06s, background .12s; }
+#callBtn:hover { background: #B81922; }
+#callBtn:active { transform: translateY(2px); box-shadow: none; }
+#reveal { flex-direction: column; }
+.verdict { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.verdict .ic-wrap { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; }
+.verdict h2 { font-family: 'Newsreader'; font-weight: 500; margin: 0; font-size: 26px; }
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); }
+.card { padding: 12px 18px; border-right: 1px solid var(--line); border-top: 3px solid var(--acc); }
+.card:last-child { border-right: 0; }
+.card .who { font-weight: 600; font-size: 14px; display: flex; gap: 7px; align-items: center; color: var(--acc); }
+.card .what { color: var(--ink2); font-size: 12.5px; margin-top: 2px; min-height: 16px; }
+.card .pts { font-family: 'IBM Plex Mono'; font-size: 26px; font-weight: 500; margin-top: 4px; }
+#final { flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
+.podium { display: flex; align-items: flex-end; gap: 10px; height: 260px; margin-top: 8px; border-bottom: 1px solid var(--ink); }
+.pod { width: 136px; text-shadow: 0 1px 1px rgba(0,0,0,.25); display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 12px; color: #fff;
+  transition: height 1s cubic-bezier(.2,.9,.2,1); height: 30px; }
+.pod .nm { font-weight: 600; font-size: 13px; display: flex; gap: 6px; align-items: center; }
+.pod .sc { font-family: 'IBM Plex Mono'; font-size: 22px; margin-top: 4px; }
+.pod .pl { font-family: 'IBM Plex Mono'; font-size: 11px; opacity: .8; margin-top: 2px; }
+.rank { font-family: 'Newsreader'; font-size: 40px; font-weight: 450; display: flex; gap: 12px; align-items: center; }
+</style></head>
+<body><div id="root">
+<div class="screen on" id="intro">
+  <div class="eyebrow"><i></i>Interactive challenge</div>
+  <h1>Seizure <em>Hunter</em></h1>
+  <div class="sub"><b id="nr"></b> rounds of real EEG from recordings <b>none of the models was trained on</b>. Some contain a seizure, some do not.
+    Press <b>Space</b> (or the red button) as soon as you think a seizure has started. You are scored against the three models on the same data: earlier is better, false calls cost points.</div>
+  <div class="tips">
+    <div class="tip"><span class="n">01</span><b>Rhythmic</b>Repeating waves, often 3–8 per second, replace the irregular background.</div>
+    <div class="tip"><span class="n">02</span><b>Large</b>Amplitude rises to several times the baseline.</div>
+    <div class="tip"><span class="n">03</span><b>Evolving</b>Frequency and shape change over seconds; most artefacts do not.</div>
+    <div class="tip"><span class="n">04</span><b>Spreading</b>Starts in one chain of electrodes and recruits its neighbours.</div>
+  </div>
+  <div class="vs" id="vs"></div>
+  <div class="row"><span class="label">Playback speed</span>
+    <button class="ns" data-s="2">Resident · 2×</button><button class="ns on" data-s="3">Neurologist · 3×</button><button class="ns" data-s="5">Expert · 5×</button></div>
+  <div class="row"><button class="ns primary big" id="start"></button><span class="label" id="best" style="margin-left:10px"></span></div>
+</div>
+<div class="screen" id="play">
+  <div class="hud"><div><div class="label">Round</div><div class="v" id="hr">1/6</div></div>
+    <div><div class="label">Your score</div><div class="v" id="hs">0</div></div>
+    <div class="prog"><i id="pg"></i></div>
+    <div><div class="label">Clip time</div><div class="v" id="ht">00:00</div></div>
+    <div class="label" style="line-height:1.6">Space: call a seizure<br>One call per round</div></div>
+  <div class="stage"><canvas class="cv" id="cv"></canvas><button id="callBtn"></button></div>
+</div>
+<div class="screen" id="reveal">
+  <div class="verdict"><div class="ic-wrap" id="vicon"></div><div><h2 id="vtitle"></h2><div class="sub" id="vsub" style="font-size:13px"></div></div>
+    <div style="flex:1"></div><button class="ns primary big" id="next"></button></div>
+  <div class="stage" style="flex:1"><canvas id="rcv" class="cv"></canvas></div>
+  <div class="cards" id="cards"></div>
+</div>
+<div class="screen" id="final">
+  <div class="eyebrow"><i></i>Final standings<i></i></div>
+  <div class="rank" id="rank"></div>
+  <div class="sub" id="fsub"></div>
+  <div class="podium" id="podium"></div>
+  <button class="ns big" id="again" style="margin-top:10px"></button>
+</div>
+</div>
+<script>
+/*__JS__*/
+const D = __DATA__;
+const ROUNDS = D.rounds;
+const { C, MODELS } = NS;
+const I = (n, sz = 16) => NS.icon(n, sz);
+const YOU = { key: 'you', name: 'You', full: 'You', color: C.ink, icon: 'user-round' };
+let speed = 3, ri = 0, t = 0, playing = false, call = null, last = null, eeg = null, base = null;
+const totals = { you: 0, svm: 0, rf: 0, cnn: 0 }, stats = { you: [], svm: [], rf: [], cnn: [] };
+const show = id => document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+document.getElementById('nr').textContent = ROUNDS.length;
+document.getElementById('vs').innerHTML = `<span class="chip">${I('user-round', 14)}You</span><span class="label">versus</span>` +
+  MODELS.map(m => `<span class="chip" style="color:${m.color}">${I(m.icon, 14)}${m.full}</span>`).join('');
+document.getElementById('start').innerHTML = 'Start' + I('arrow-right', 16);
+document.getElementById('callBtn').innerHTML = I('zap', 20) + 'Seizure';
+document.getElementById('again').innerHTML = I('rotate-ccw', 15) + 'Play again';
+document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { speed = +b.dataset.s; document.querySelectorAll('[data-s]').forEach(x => x.classList.toggle('on', x === b)); });
+try { const b = localStorage.getItem('ns_best'); if (b) document.getElementById('best').textContent = 'Best on this device: ' + b + ' pts'; } catch (e) {}
+
+function score(callT, r) {
+  if (r.kind === 'normal' || !r.seizures.length) return callT === null ? { pts: 60, tag: 'Correctly stayed silent', lat: null } : { pts: -40, tag: `False alarm at ${callT.toFixed(1)} s`, lat: null };
+  const [s, e] = r.seizures[0];
+  if (callT === null) return { pts: 0, tag: 'Missed the seizure', lat: null };
+  if (callT < s - 3) return { pts: -40, tag: `Called ${(s - callT).toFixed(1)} s too early`, lat: null };
+  if (callT > e + 10) return { pts: 0, tag: 'Too late', lat: null };
+  const lat = Math.max(0, callT - s);
+  return { pts: Math.round(Math.max(20, 100 - 4 * lat)), tag: `Detected ${lat.toFixed(1)} s after onset`, lat };
+}
+
+function startRound() {
+  const r = ROUNDS[ri];
+  eeg = NS.decodeEEG(r.eeg, r.channels.length, r.scale);
+  base = eeg.map(a => { let s = 0; const n = Math.min(a.length, r.fs * 12); for (let i = 0; i < n; i++) s += a[i] * a[i]; return Math.sqrt(s / n) + 1e-3; });
+  t = 0; call = null; playing = true; last = null;
+  document.getElementById('hr').textContent = `${ri + 1}/${ROUNDS.length}`;
+  document.getElementById('hs').textContent = totals.you;
+  show('play'); requestAnimationFrame(loop);
+}
+function doCall() { if (!playing || call !== null) return; call = t; NS.beep(1320, 0.08, 'triangle', 0.08); endRound(); }
+document.getElementById('callBtn').onclick = doCall;
+document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); if (document.getElementById('play').classList.contains('on')) doCall(); else if (document.getElementById('reveal').classList.contains('on')) document.getElementById('next').click(); } });
+
+function drawStrip(ctx, w, h, r, tStart, tEnd, opts = {}) {
+  const L = 66, R = w - 12, top = 12, bot = h - 26, W = R - L, n = r.channels.length, rowH = (bot - top) / n, fs = r.fs;
+  const X = tt => L + (tt - tStart) / (tEnd - tStart) * W;
+  if (opts.truth) r.seizures.forEach(([s, e]) => { const a = Math.max(L, X(s)), b = Math.min(R, X(e)); if (b > a) { ctx.fillStyle = C.seizureFill; ctx.fillRect(a, top, b - a, bot - top); ctx.fillStyle = C.seizure; ctx.fillRect(X(s), top, 1.5, bot - top); } });
+  const span = tEnd - tStart, minor = span > 20 ? 1 : 0.2, major = span > 20 ? 5 : 1;
+  for (let s = Math.ceil(tStart / minor) * minor; s <= tEnd; s += minor) { const x = X(s); const isMajor = Math.abs(s / major - Math.round(s / major)) < 1e-6;
+    ctx.strokeStyle = isMajor ? C.gridMajor : C.gridMinor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bot); ctx.stroke();
+    if (isMajor && s >= 0) { ctx.fillStyle = C.ink3; ctx.font = '10px IBM Plex Mono'; ctx.textAlign = 'center'; ctx.fillText(Math.round(s) + ' s', x, bot + 15); } }
+  const i0 = Math.max(0, Math.floor(tStart * fs)), i1 = Math.floor(tEnd * fs), stride = Math.max(1, Math.floor((i1 - i0) / (W * 1.5)));
+  for (let c = 0; c < n; c++) {
+    const y0 = top + rowH * (c + 0.5), a = eeg[c], sc = rowH / 200;
+    ctx.fillStyle = C.ink2; ctx.font = '10px IBM Plex Mono'; ctx.textAlign = 'right'; ctx.fillText(r.channels[c], L - 8, y0 + 3);
+    ctx.strokeStyle = C.trace; ctx.lineWidth = 0.9; ctx.beginPath();
+    for (let i = i0; i < i1 && i < a.length; i += stride) { const x = X(i / fs), y = y0 - Math.max(-rowH, Math.min(rowH, a[i] * sc)); i === i0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    ctx.stroke();
+  }
+  return X;
+}
+
+const cv = document.getElementById('cv');
+function loop(now) {
+  if (!playing) return;
+  if (last === null) last = now;
+  t += Math.min(0.1, (now - last) / 1000) * speed; last = now;
+  const r = ROUNDS[ri];
+  if (t >= r.duration - 0.05) { t = r.duration - 0.05; endRound(); return; }
+  const { ctx, w, h } = NS.setupCanvas(cv); ctx.clearRect(0, 0, w, h);
+  drawStrip(ctx, w, h, r, t - 10, t);
+  ctx.fillStyle = C.accent; ctx.fillRect(w - 13, 12, 1.5, h - 38);
+  document.getElementById('pg').style.width = (100 * t / r.duration) + '%';
+  document.getElementById('ht').textContent = NS.fmtT(t);
+  requestAnimationFrame(loop);
+}
+
+function endRound() {
+  playing = false;
+  const r = ROUNDS[ri];
+  const res = { you: score(call, r) };
+  MODELS.forEach(m => res[m.key] = score(r.ai[m.key], r));
+  Object.keys(res).forEach(k => { totals[k] += res[k].pts; stats[k].push(res[k]); });
+  const isSz = r.kind === 'seizure';
+  const youBest = Object.keys(res).every(k => res.you.pts >= res[k].pts);
+  const vi = document.getElementById('vicon');
+  const [vic, vcol] = res.you.pts > 0 ? (youBest ? ['trophy', C.ok] : ['circle-check', C.ok]) : res.you.pts < 0 ? ['circle-x', C.seizure] : ['crosshair', C.ink3];
+  vi.innerHTML = I(vic, 22); vi.style.color = vcol;
+  document.getElementById('vtitle').textContent = (isSz ? 'This clip contained a seizure. ' : 'No seizure in this clip. ') + (res.you.pts > 0 ? (youBest ? 'You matched or beat every model.' : 'Correct call.') : res.you.pts < 0 ? 'False alarm.' : 'Missed.');
+  document.getElementById('vsub').textContent = isSz ? `Annotated onset at ${r.seizures[0][0].toFixed(1)} s, duration ${(r.seizures[0][1] - r.seizures[0][0]).toFixed(0)} s. Record ${r.record}.` : `Seizure-free control segment from ${r.record}.`;
+  const cards = document.getElementById('cards'); cards.innerHTML = '';
+  [YOU, ...MODELS].forEach(m => {
+    cards.insertAdjacentHTML('beforeend', `<div class="card" style="--acc:${m.color}"><div class="who">${I(m.icon, 15)}${m.full}</div><div class="what">${res[m.key].tag}</div><div class="pts" style="color:${res[m.key].pts < 0 ? C.seizure : C.ink}">${res[m.key].pts > 0 ? '+' : ''}${res[m.key].pts}</div></div>`); });
+  show('reveal');
+  requestAnimationFrame(() => {
+    const { ctx, w, h } = NS.setupCanvas(document.getElementById('rcv'));
+    const X = drawStrip(ctx, w, h, r, 0, r.duration, { truth: true });
+    const flags = [['YOU', call, C.ink], ...MODELS.map(m => [m.name.toUpperCase(), r.ai[m.key], m.color])];
+    flags.forEach(([nm, tt, col], j) => { if (tt === null || tt === undefined) return; const x = X(tt);
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.setLineDash(nm === 'YOU' ? [] : [5, 4]); ctx.beginPath(); ctx.moveTo(x, 12); ctx.lineTo(x, h - 26); ctx.stroke(); ctx.setLineDash([]);
+      ctx.font = '500 10.5px IBM Plex Mono'; ctx.textAlign = 'left'; const y = 26 + j * 17;
+      ctx.fillStyle = col; ctx.fillRect(x, y - 11, ctx.measureText(nm).width + 10, 15); ctx.fillStyle = C.paper; ctx.fillText(nm, x + 5, y); });
+  });
+  document.getElementById('next').innerHTML = (ri + 1 < ROUNDS.length ? 'Next round' : 'Final standings') + I('arrow-right', 16);
+}
+document.getElementById('next').onclick = () => { ri++; if (ri < ROUNDS.length) startRound(); else finish(); };
+
+function finish() {
+  show('final');
+  const rows = [YOU, ...MODELS].map(m => ({ ...m, s: totals[m.key] })).sort((a, b) => b.s - a.s);
+  const place = rows.findIndex(r => r.key === 'you') + 1;
+  const titles = [['trophy', 'Seizure whisperer'], ['medal', 'Attending neurologist'], ['award', 'Senior resident'], ['brain', 'Medical student']];
+  document.getElementById('rank').innerHTML = I(titles[place - 1][0], 34) + titles[place - 1][1];
+  const lats = stats.you.filter(s => s.lat !== null).map(s => s.lat);
+  document.getElementById('fsub').textContent = `You placed ${place} of 4 with ${totals.you} points` + (lats.length ? `; mean detection latency ${(lats.reduce((a, b) => a + b, 0) / lats.length).toFixed(1)} s` : '') + '.';
+  const pod = document.getElementById('podium'); pod.innerHTML = '';
+  const order = [rows[1], rows[0], rows[2], rows[3]], places = ['2nd', '1st', '3rd', '4th'];
+  const maxS = Math.max(...rows.map(r => Math.abs(r.s)), 1);
+  order.forEach((r, j) => { if (!r) return;
+    pod.insertAdjacentHTML('beforeend', `<div class="pod" style="background:${r.color};color:${r.key === 'you' ? NS.C.paper : '#fff'}"><div class="nm">${I(r.icon, 14)}${r.full}</div><div class="sc">${r.s}</div><div class="pl">${places[j]}</div></div>`); });
+  setTimeout(() => [...pod.children].forEach((el, j) => el.style.height = (70 + 180 * Math.max(0.05, (order[j].s + maxS * 0.2) / (maxS * 1.2))) + 'px'), 60);
+  try { const b = +(localStorage.getItem('ns_best') || -1e9); if (totals.you > b) localStorage.setItem('ns_best', totals.you); } catch (e) {}
+  if (place === 1) { NS.beep(523, .15, 'triangle', .07); NS.beep(659, .15, 'triangle', .07, .15); NS.beep(784, .3, 'triangle', .07, .3); }
+}
+document.getElementById('start').onclick = () => { NS.audio(); startRound(); };
+document.getElementById('again').onclick = () => { ri = 0; Object.keys(totals).forEach(k => { totals[k] = 0; stats[k] = []; }); show('intro'); };
+</script></body></html>

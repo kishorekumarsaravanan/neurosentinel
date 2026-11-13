@@ -1,0 +1,141 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+/*__CSS__*/
+#root { height: 100vh; display: grid; grid-template-columns: 1.05fr 1fr; gap: 0; border: 1px solid var(--line); }
+.box { position: relative; }
+.box > .label { position: absolute; top: 12px; left: 14px; z-index: 2; }
+.left { border-right: 1px solid var(--line); }
+.right { display: grid; grid-template-rows: 1fr 132px auto; gap: 0; }
+.right > * + * { border-top: 1px solid var(--line); }
+.ctrl { padding: 14px 16px; display: grid; gap: 12px; }
+.row { display: flex; align-items: center; gap: 12px; }
+input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 2px; outline: none; background: var(--line2); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--ink); cursor: pointer; }
+.kv { font-family: 'IBM Plex Mono'; font-size: 13px; min-width: 48px; text-align: right; }
+.state { font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 22px; margin: 2px 0 4px; }
+.expl { color: var(--ink2); font-size: 13px; line-height: 1.5; }
+.gauge { display: grid; grid-template-columns: 140px 1fr; gap: 12px; align-items: center; padding: 6px 16px 6px 8px; }
+</style></head>
+<body><div id="root">
+  <div class="box left"><div class="label">160 cortical neurons · Kuramoto oscillators</div><canvas id="brain" class="cv"></canvas></div>
+  <div class="right">
+    <div class="box"><div class="label">Simulated scalp EEG (sum of all neurons)</div><canvas id="eeg" class="cv"></canvas></div>
+    <div class="gauge"><canvas id="gauge" style="width:140px;height:118px"></canvas>
+      <div><div class="label">Order parameter r</div><div class="state" id="state">Asynchronous</div><div class="expl" id="expl"></div></div></div>
+    <div class="ctrl">
+      <div class="row"><span class="label" style="min-width:110px">Coupling K</span><input type="range" id="k" min="0" max="10" step="0.05" value="1"><span class="kv" id="kv">1.00</span></div>
+      <div class="row"><button class="ns danger" id="trig"></button><button class="ns" id="calm"></button>
+        <div style="flex:1"></div><span class="label">Critical coupling ≈ 3.5</span></div>
+    </div>
+  </div>
+</div>
+<script>
+/*__JS__*/
+const N = 160, TWO_PI = Math.PI * 2;
+const rnd = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(TWO_PI * rnd());
+const neurons = [];
+while (neurons.length < N) {
+  const side = neurons.length % 2 ? 1 : -1;
+  const x = (rnd() * 2 - 1), y = (rnd() * 2 - 1);
+  if (x * x + y * y > 1) continue;
+  neurons.push({ x: side * (0.5 + 0.43 * x), y: 0.82 * y + 0.04 * x * x * side, th: rnd() * TWO_PI, w: TWO_PI * 1.6 + 2.2 * gauss(), fl: 0 });
+}
+const links = [];
+neurons.forEach((a, i) => { neurons.map((b, j) => [j, (a.x - b.x) ** 2 + (a.y - b.y) ** 2]).sort((p, q) => p[1] - q[1]).slice(1, 4).forEach(([j]) => { if (i < j) links.push([i, j]); }); });
+
+let K = 1, target = null, r = 0, psi = 0, simT = 0, last = null;
+const hist = []; const HSPAN = 8;
+const kEl = document.getElementById('k'), kv = document.getElementById('kv');
+kEl.oninput = () => { K = +kEl.value; target = null; kv.textContent = K.toFixed(2); };
+let script = null;
+document.getElementById('trig').onclick = () => { script = { t0: simT, from: K }; };
+document.getElementById('calm').onclick = () => { script = null; target = 0.6; };
+
+const cvB = document.getElementById('brain'), cvE = document.getElementById('eeg'), cvG = document.getElementById('gauge');
+let gB, gE, gG; const rs = () => { gB = NS.setupCanvas(cvB); gE = NS.setupCanvas(cvE); gG = NS.setupCanvas(cvG); };
+window.addEventListener('resize', rs); rs();
+
+function step(dt) {
+  const sub = 4, h = dt / sub;
+  for (let s = 0; s < sub; s++) {
+    let cx = 0, cy = 0; neurons.forEach(n => { cx += Math.cos(n.th); cy += Math.sin(n.th); });
+    r = Math.hypot(cx, cy) / N; psi = Math.atan2(cy, cx);
+    neurons.forEach(n => {
+      const prev = n.th;
+      n.th += h * (n.w + K * r * Math.sin(psi - n.th)) + Math.sqrt(h) * 0.35 * gauss();
+      if (Math.floor(prev / TWO_PI) !== Math.floor(n.th / TWO_PI)) n.fl = 1;
+    });
+    simT += h;
+    let v = 0; neurons.forEach(n => v += Math.cos(n.th)); v /= Math.sqrt(N);
+    hist.push([simT, v + 0.25 * gauss()]);
+  }
+  while (hist.length && hist[0][0] < simT - HSPAN) hist.shift();
+  neurons.forEach(n => n.fl *= Math.exp(-dt * 6));
+}
+
+document.getElementById('trig').innerHTML = NS.icon('zap', 15) + 'Trigger seizure';
+document.getElementById('calm').innerHTML = NS.icon('moon', 15) + 'Reset';
+const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const hx = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const BLUE = hx(NS.C.accent), RED = hx(NS.C.seizure), INK = hx(NS.C.ink);
+
+function draw() {
+  const sync = Math.max(0, Math.min(1, (r - 0.15) / 0.7));
+  const col = mix(BLUE, RED, sync);
+  // neurons
+  { const { ctx, w, h } = gB; ctx.clearRect(0, 0, w, h);
+    const S = Math.min(w / 2.3, h / 1.95), cx = w / 2, cy = h / 2 + 10;
+    const P = n => [cx + n.x * S, cy - n.y * S];
+    ctx.lineWidth = 1;
+    [-1, 1].forEach(sd => { ctx.beginPath(); ctx.ellipse(cx + sd * 0.5 * S, cy, 0.5 * S, 0.9 * S, 0, 0, TWO_PI);
+      ctx.fillStyle = NS.rgb(col, 0.02 + 0.06 * sync); ctx.fill(); ctx.strokeStyle = NS.C.line2; ctx.stroke(); });
+    links.forEach(([i, j]) => { const a = neurons[i], b = neurons[j]; const [x1, y1] = P(a), [x2, y2] = P(b);
+      const act = (a.fl + b.fl) / 2; ctx.strokeStyle = act > 0.15 ? NS.rgb(col, 0.15 + 0.6 * act) : NS.C.linkIdle; ctx.lineWidth = 0.6 + 1.2 * act * sync;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); });
+    neurons.forEach(n => { const [x, y] = P(n); const f = n.fl;
+      ctx.fillStyle = NS.rgb(mix(INK, col, Math.min(1, f * 1.4)), 0.55 + 0.45 * f);
+      ctx.beginPath(); ctx.arc(x, y, 1.8 + 2.6 * f, 0, TWO_PI); ctx.fill(); });
+    ctx.fillStyle = NS.C.ink3; ctx.font = '10.5px IBM Plex Mono'; ctx.textAlign = 'center';
+    ctx.fillText('LEFT HEMISPHERE', cx - 0.5 * S, cy + 0.98 * S); ctx.fillText('RIGHT HEMISPHERE', cx + 0.5 * S, cy + 0.98 * S);
+  }
+  // eeg
+  { const { ctx, w, h } = gE; ctx.clearRect(0, 0, w, h);
+    const L = 12, R = w - 12, mid = h / 2 + 12, A = (h - 54) / 2 / 13;
+    for (let s = Math.ceil((simT - HSPAN) * 5) / 5; s <= simT; s += 0.2) { const x = L + (s - (simT - HSPAN)) / HSPAN * (R - L);
+      ctx.strokeStyle = Math.abs(s - Math.round(s)) < 1e-6 ? NS.C.gridMajor : NS.C.gridMinor; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, 32); ctx.lineTo(x, h - 8); ctx.stroke(); }
+    ctx.strokeStyle = NS.rgb(mix(INK, col, sync)); ctx.lineWidth = 1.4; ctx.beginPath();
+    hist.forEach(([tt, v], i) => { const x = L + (tt - (simT - HSPAN)) / HSPAN * (R - L), y = mid - Math.max(-13.5, Math.min(13.5, v)) * A; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+  }
+  // gauge
+  { const { ctx, w, h } = gG; ctx.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h * 0.74, R = Math.min(w / 2, h * 0.7) - 8, a0 = Math.PI, a1 = Math.PI * 2;
+    ctx.lineCap = 'butt'; ctx.lineWidth = 8; ctx.strokeStyle = NS.C.inset; ctx.beginPath(); ctx.arc(cx, cy, R, a0, a1); ctx.stroke();
+    ctx.strokeStyle = NS.rgb(col); ctx.beginPath(); ctx.arc(cx, cy, R, a0, a0 + (a1 - a0) * r); ctx.stroke();
+    ctx.strokeStyle = NS.C.ink; ctx.lineWidth = 1; const ac = a0 + (a1 - a0) * 0.6; ctx.beginPath(); ctx.moveTo(cx + (R - 9) * Math.cos(ac), cy + (R - 9) * Math.sin(ac)); ctx.lineTo(cx + (R + 9) * Math.cos(ac), cy + (R + 9) * Math.sin(ac)); ctx.stroke();
+    ctx.fillStyle = NS.C.ink; ctx.font = '500 22px IBM Plex Mono'; ctx.textAlign = 'center'; ctx.fillText(r.toFixed(2), cx, cy - 2);
+    ctx.fillStyle = NS.C.ink3; ctx.font = '10px IBM Plex Mono'; ctx.fillText('0', cx - R, cy + 14); ctx.fillText('1', cx + R, cy + 14);
+  }
+  const st = document.getElementById('state'), ex = document.getElementById('expl');
+  if (r < 0.3) { st.textContent = 'Asynchronous'; st.style.color = NS.C.ink;
+    ex.textContent = 'Neurons fire independently. Their fields largely cancel, so the scalp signal is small and irregular.'; }
+  else if (r < 0.6) { st.textContent = 'Partial synchrony'; st.style.color = NS.C.warn;
+    ex.textContent = 'Coupling recruits neighbours into a shared rhythm; waves grow larger and more regular.'; }
+  else { st.textContent = 'Hypersynchrony'; st.style.color = NS.C.seizure;
+    ex.textContent = 'Most neurons fire together. Their fields add up into the large rhythmic waves seen during a seizure.'; }
+}
+
+
+function frame(now) {
+  if (last === null) last = now;
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (script) { const e = simT - script.t0;
+    K = e < 3 ? script.from + (9 - script.from) * e / 3 : e < 10 ? 9 : e < 14 ? 9 - 8.2 * (e - 10) / 4 : 0.8;
+    if (e >= 14) script = null; kEl.value = K; kv.textContent = K.toFixed(2); }
+  else if (target !== null) { K += (target - K) * 0.05; kEl.value = K; kv.textContent = K.toFixed(2); if (Math.abs(K - target) < 0.02) target = null; }
+  step(dt); draw(); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script></body></html>
