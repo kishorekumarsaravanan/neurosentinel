@@ -125,7 +125,9 @@ fig.add_trace(go.Scatter(x=times[consensus] / 60, y=np.full(consensus.sum(), 1.0
                          marker=dict(symbol="square", size=5, color=ui.SEIZURE)))
 fig.update_layout(title="Model output per second (dotted boxes: detected events)")
 fig.update_xaxes(title="minutes"); fig.update_yaxes(title="P(seizure)", range=[-0.02, 1.12])
-st.plotly_chart(ui.style(fig, 380), use_container_width=True, theme=None)
+fig = ui.style(fig, 380)
+fig.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
+st.plotly_chart(fig, use_container_width=True, theme=None)
 
 if rows:
     st.markdown("#### Detected events")

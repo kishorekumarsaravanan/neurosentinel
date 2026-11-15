@@ -140,8 +140,12 @@ with tabs[1]:
     f1.add_trace(go.Scatter(x=[0, 1], y=[0, 1], line=dict(color=ui.INK3, dash="dot", width=1), showlegend=False))
     f1.update_layout(title="ROC curve", xaxis_title="False positive rate", yaxis_title="True positive rate")
     f2.update_layout(title="Precision–recall curve", xaxis_title="Recall", yaxis_title="Precision")
-    c1.plotly_chart(ui.style(f1, 420), use_container_width=True, theme=None)
-    c2.plotly_chart(ui.style(f2, 420), use_container_width=True, theme=None)
+    f1 = ui.style(f1, 420)
+    f1.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
+    f2 = ui.style(f2, 420)
+    f2.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
+    c1.plotly_chart(f1, use_container_width=True, theme=None)
+    c2.plotly_chart(f2, use_container_width=True, theme=None)
     st.caption("With fewer than 1 % ictal windows, the precision–recall curve is the more informative of the two.")
 
 with tabs[2]:
@@ -160,7 +164,9 @@ with tabs[2]:
     fig.add_trace(go.Scatter(y=durs.seizure, x=durs.dur, mode="markers", name="seizure end", marker=dict(symbol="line-ns", size=22, line=dict(width=2, color=ui.SEIZURE))))
     fig.update_layout(barmode="group", title="Seconds from annotated onset to first alarm", xaxis_title="seconds after onset")
     fig.update_yaxes(tickfont=dict(family="IBM Plex Mono", size=11, color=ui.INK))
-    st.plotly_chart(ui.style(fig, 140 + 70 * len(durs)), use_container_width=True, theme=None)
+    fig = ui.style(fig, 140 + 70 * len(durs))
+    fig.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
+    st.plotly_chart(fig, use_container_width=True, theme=None)
     st.caption("The red tick marks the end of each seizure. An alarm before that point still leaves time for an "
                "intervention such as rescue medication, a nurse call or video capture.")
 
@@ -184,7 +190,9 @@ with tabs[3]:
             fig.add_trace(go.Bar(x=names, y=vals, name=metric.capitalize() if metric != "f1" else "F1-score", marker=dict(color=shade),
                                  text=[f"{v * 100:.0f}%" for v in vals], textposition="outside", textfont=dict(family="IBM Plex Mono", size=11)))
         fig.update_layout(barmode="group", title="Accuracy versus sensitivity and F1", yaxis_range=[0, 1.15])
-        st.plotly_chart(ui.style(fig, 400), use_container_width=True, theme=None)
+        fig = ui.style(fig, 400)
+        fig.update_layout(legend=dict(y=-0.18, yanchor="top", x=0.5, xanchor="center"))
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
 with tabs[4]:
     st.markdown("Each detector trades **early detection** against **false alarms**. Adjust the decision rule and the "
@@ -210,16 +218,22 @@ with tabs[4]:
 
 with tabs[5]:
     hist_patients = patients if scope == "All patients" else [scope]
-    fig = make_subplots(rows=1, cols=2, subplot_titles=["Loss", "Validation accuracy"])
+    c1, c2 = st.columns(2)
+    f1, f2 = go.Figure(), go.Figure()
     dashes = ["solid", "dash", "dot"]
     for j, p in enumerate(hist_patients):
         h = pd.DataFrame(R["patients"][p]["cnn_history"])
-        fig.add_trace(go.Scatter(x=h.epoch, y=h.train_loss, name=f"{p} train", line=dict(color=ui.INK, dash=dashes[j], width=1.5)), 1, 1)
-        fig.add_trace(go.Scatter(x=h.epoch, y=h.val_loss, name=f"{p} validation", line=dict(color=ui.MODEL_COLORS["cnn"], dash=dashes[j], width=1.5)), 1, 1)
-        fig.add_trace(go.Scatter(x=h.epoch, y=h.val_acc, name=f"{p} val. accuracy", line=dict(color=ui.OK, dash=dashes[j], width=1.5)), 1, 2)
-    fig.update_xaxes(title="epoch")
-    fig.update_annotations(font=dict(family="Newsreader", size=17, color=ui.INK))
-    st.plotly_chart(ui.style(fig, 380), use_container_width=True, theme=None)
+        f1.add_trace(go.Scatter(x=h.epoch, y=h.train_loss, name=f"{p} train", line=dict(color=ui.INK, dash=dashes[j], width=1.5)))
+        f1.add_trace(go.Scatter(x=h.epoch, y=h.val_loss, name=f"{p} validation", line=dict(color=ui.MODEL_COLORS["cnn"], dash=dashes[j], width=1.5)))
+        f2.add_trace(go.Scatter(x=h.epoch, y=h.val_acc, name=f"{p} val. accuracy", line=dict(color=ui.OK, dash=dashes[j], width=1.5)))
+    f1.update_layout(title="Loss", xaxis_title="epoch", yaxis_title="cross-entropy loss")
+    f2.update_layout(title="Validation accuracy", xaxis_title="epoch", yaxis_title="accuracy")
+    f1 = ui.style(f1, 380)
+    f1.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
+    f2 = ui.style(f2, 380)
+    f2.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
+    c1.plotly_chart(f1, use_container_width=True, theme=None)
+    c2.plotly_chart(f2, use_container_width=True, theme=None)
     st.caption("The 1D-CNN (about 110 k parameters) is trained with class-weighted binary cross-entropy, AdamW and a "
                "cosine schedule. Inputs are augmented with amplitude scaling, noise and time shifts; the checkpoint with "
                "the lowest validation loss is kept.")
