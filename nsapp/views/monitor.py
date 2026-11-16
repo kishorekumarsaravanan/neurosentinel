@@ -43,4 +43,4 @@ for j, k in enumerate(["svm", "rf", "cnn"]):
 fig.add_hline(y=0.5, line=dict(color=ui.WARN, dash="dash", width=1))
 fig.update_yaxes(range=[-0.32, 1.05], title="P(seizure)")
 fig.update_xaxes(title="minutes into recording")
-st.plotly_chart(ui.style(fig, 340), use_container_width=True, theme=None)
+st.plotly_chart(ui.style(fig, 340), width="stretch", theme=None)

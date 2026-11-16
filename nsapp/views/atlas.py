@@ -66,7 +66,7 @@ fig.update_xaxes(title="minutes", row=rows, col=1)
 fig.update_layout(title="Channel activity (line length, z-scored), frequency mix" + (" and model output" if has_pred else ""))
 fig = ui.style(fig, 660)
 fig.update_layout(legend=dict(y=-0.08, yanchor="top", x=0, xanchor="left"))
-st.plotly_chart(fig, use_container_width=True, theme=None)
+st.plotly_chart(fig, width="stretch", theme=None)
 
 # ------------------------------------------------------------- time-lapse
 st.markdown("#### Scalp time-lapse")
@@ -117,4 +117,4 @@ fig.update_yaxes(tickvals=list(range(len(ui.CHANNELS))), ticktext=ui.CHANNELS, a
                  tickfont=dict(family="IBM Plex Mono", size=10, color=ui.INK), showgrid=False)
 fig.update_xaxes(title="seconds", dtick=1)
 fig.update_layout(title="20-second page, 0.5–40 Hz band-pass (red: annotated seizure)")
-st.plotly_chart(ui.style(fig, 620, legend=False), use_container_width=True, theme=None)
+st.plotly_chart(ui.style(fig, 620, legend=False), width="stretch", theme=None)
