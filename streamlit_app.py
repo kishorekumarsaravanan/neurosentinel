@@ -2,9 +2,13 @@
 
 Run:  streamlit run streamlit_app.py
 """
+from pathlib import Path
+
 import streamlit as st
 
-st.set_page_config(page_title="NeuroSentinel", page_icon="nsapp/assets/mark.svg", layout="wide",
+ASSETS = Path(__file__).resolve().parent / "nsapp" / "assets"   # works whatever the working directory is
+
+st.set_page_config(page_title="NeuroSentinel", page_icon=str(ASSETS / "mark.svg"), layout="wide",
                    initial_sidebar_state="expanded")
 
 from nsapp import ui  # noqa: E402
@@ -29,7 +33,7 @@ pages = {
     ],
 }
 
-st.logo("nsapp/assets/logo.svg", size="large", icon_image="nsapp/assets/mark.svg")
+st.logo(str(ASSETS / "logo.svg"), size="large", icon_image=str(ASSETS / "mark.svg"))
 nav = st.navigation(pages)
 
 with st.sidebar:

@@ -3,6 +3,8 @@
 Pages that only need the committed artifacts/ always run; pages that read raw EEG are skipped
 when data/raw is empty (e.g. on CI).
 """
+from pathlib import Path
+
 import pytest
 from streamlit.testing.v1 import AppTest
 
@@ -10,11 +12,13 @@ from conftest import needs_artifacts, needs_data
 
 ARTIFACT_PAGES = ["monitor", "game", "arena"]
 DATA_PAGES = ["prologue", "atlas", "signal_lab", "xray", "diagnose"]
+# absolute path: newer Streamlit resolves relative AppTest paths against the calling test file, not the cwd
+ENTRY = str(Path(__file__).resolve().parents[1] / "streamlit_app.py")
 
 
 def run_page(name: str, theme: str) -> AppTest:
     """Open a page through the real entry point, so st.navigation / st.page_link behave as in the app."""
-    at = AppTest.from_file("streamlit_app.py", default_timeout=180)
+    at = AppTest.from_file(ENTRY, default_timeout=180)
     at.session_state["ns_theme"] = theme
     at.run()
     return at.switch_page(f"nsapp/views/{name}.py").run()
@@ -69,5 +73,5 @@ def test_diagnose_scans_a_library_recording():
 @pytest.mark.app
 @needs_artifacts
 def test_entry_point_navigation_renders():
-    at = AppTest.from_file("streamlit_app.py", default_timeout=180).run()
+    at = AppTest.from_file(ENTRY, default_timeout=180).run()
     assert_clean(at)
