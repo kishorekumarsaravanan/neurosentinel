@@ -83,7 +83,7 @@ for i, ch in enumerate(ui.CHANNELS):
 fig.update_yaxes(tickvals=list(range(len(ui.CHANNELS))), ticktext=ui.CHANNELS, range=[len(ui.CHANNELS) - 0.4, -0.6], showgrid=False)
 fig.update_xaxes(title="time in recording (s)", showgrid=False)
 fig.update_layout(title="Gradient × input saliency (stronger colour = more influential samples)")
-st.plotly_chart(ui.style(fig, 560, legend=False), use_container_width=True, theme=None)
+st.plotly_chart(ui.style(fig, 560, legend=False), width="stretch", theme=None)
 
 # ----------------------------------------------------------- global feature importance
 st.markdown("#### What the random forest learned")
@@ -105,11 +105,11 @@ with c1:
         textfont=dict(family="IBM Plex Sans", color=ui.PAPER),
         hovertemplate="%{label}<br>%{value:.3f}<extra></extra>", insidetextorientation="radial"))
     fig.update_layout(title="Importance by feature family (click to zoom)")
-    st.plotly_chart(ui.style(fig, 470, legend=False), use_container_width=True, theme=None)
+    st.plotly_chart(ui.style(fig, 470, legend=False), width="stretch", theme=None)
 with c2:
     t15 = df.sort_values("imp", ascending=False).head(15)[::-1]
     fig = go.Figure(go.Bar(x=t15.imp, y=t15.channel + " · " + t15.feature.str.replace("_", " "), orientation="h",
                            marker=dict(color=ui.INK)))
     fig.update_layout(title="Top 15 individual features")
     fig.update_yaxes(tickfont=dict(family="IBM Plex Mono", size=10, color=ui.INK), showgrid=False)
-    st.plotly_chart(ui.style(fig, 470, legend=False), use_container_width=True, theme=None)
+    st.plotly_chart(ui.style(fig, 470, legend=False), width="stretch", theme=None)

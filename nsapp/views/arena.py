@@ -17,7 +17,9 @@ ui.need_artifacts()
 R = ui.results()
 KEYS = ["svm", "rf", "cnn"]
 patients = list(R["patients"])
-scope = st.segmented_control("Scope", ["All patients"] + patients, default="All patients") or "All patients"
+options = ["All patients"] + patients
+requested = st.query_params.get("scope")           # e.g. ?scope=chb03 opens one patient directly
+scope = st.segmented_control("Scope", options, default=requested if requested in options else "All patients") or "All patients"
 
 
 def M(k):
@@ -89,7 +91,7 @@ with c1:
                       title="Performance profile")
     fig = ui.style(fig, 450)
     fig.update_layout(legend=dict(y=-0.12, yanchor="top", x=0.5, xanchor="center"))
-    st.plotly_chart(fig, use_container_width=True, theme=None)
+    st.plotly_chart(fig, width="stretch", theme=None)
 with c2:
     tbl = pd.DataFrame({
         ui.MODEL_NAMES[k]: {
@@ -105,7 +107,7 @@ with c2:
     for r in tbl.index:
         fmt.loc[r] = [("n/a" if v is None or (isinstance(v, float) and np.isnan(v)) else (f"{v * 100:.2f} %" if r in pct else f"{v:.2f}")) for v in tbl.loc[r]]
     st.markdown("##### Scorecard")
-    st.dataframe(fmt, use_container_width=True, height=422)
+    st.dataframe(fmt, width="stretch", height=422)
 
 # ------------------------------------------------------------------ detail tabs
 tabs = st.tabs([":material/grid_on: Confusion matrices", ":material/show_chart: ROC and PR curves", ":material/timer: Detection latency",
@@ -125,7 +127,7 @@ with tabs[0]:
         fig.update_yaxes(autorange="reversed", showticklabels=(i == 0), showgrid=False, row=1, col=i + 1)
         fig.update_xaxes(showgrid=False, row=1, col=i + 1)
     fig.update_annotations(font=dict(family="Newsreader", size=17, color=ui.INK))
-    st.plotly_chart(ui.style(fig, 360, legend=False), use_container_width=True, theme=None)
+    st.plotly_chart(ui.style(fig, 360, legend=False), width="stretch", theme=None)
     st.caption("Rows are normalised: the diagonal shows specificity (top-left) and sensitivity (bottom-right). "
                "Counts are non-overlapping 4-s windows from the held-out hours.")
 
@@ -144,8 +146,8 @@ with tabs[1]:
     f1.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
     f2 = ui.style(f2, 420)
     f2.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
-    c1.plotly_chart(f1, use_container_width=True, theme=None)
-    c2.plotly_chart(f2, use_container_width=True, theme=None)
+    c1.plotly_chart(f1, width="stretch", theme=None)
+    c2.plotly_chart(f2, width="stretch", theme=None)
     st.caption("With fewer than 1 % ictal windows, the precision–recall curve is the more informative of the two.")
 
 with tabs[2]:
@@ -166,7 +168,7 @@ with tabs[2]:
     fig.update_yaxes(tickfont=dict(family="IBM Plex Mono", size=11, color=ui.INK))
     fig = ui.style(fig, 140 + 70 * len(durs))
     fig.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
-    st.plotly_chart(fig, use_container_width=True, theme=None)
+    st.plotly_chart(fig, width="stretch", theme=None)
     st.caption("The red tick marks the end of each seizure. An alarm before that point still leaves time for an "
                "intervention such as rescue medication, a nurse call or video capture.")
 
@@ -192,7 +194,7 @@ with tabs[3]:
         fig.update_layout(barmode="group", title="Accuracy versus sensitivity and F1", yaxis_range=[0, 1.15])
         fig = ui.style(fig, 400)
         fig.update_layout(legend=dict(y=-0.18, yanchor="top", x=0.5, xanchor="center"))
-        st.plotly_chart(fig, use_container_width=True, theme=None)
+        st.plotly_chart(fig, width="stretch", theme=None)
 
 with tabs[4]:
     st.markdown("Each detector trades **early detection** against **false alarms**. Adjust the decision rule and the "
@@ -232,8 +234,8 @@ with tabs[5]:
     f1.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
     f2 = ui.style(f2, 380)
     f2.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
-    c1.plotly_chart(f1, use_container_width=True, theme=None)
-    c2.plotly_chart(f2, use_container_width=True, theme=None)
+    c1.plotly_chart(f1, width="stretch", theme=None)
+    c2.plotly_chart(f2, width="stretch", theme=None)
     st.caption("The 1D-CNN (about 110 k parameters) is trained with class-weighted binary cross-entropy, AdamW and a "
                "cosine schedule. Inputs are augmented with amplitude scaling, noise and time shifts; the checkpoint with "
                "the lowest validation loss is kept.")

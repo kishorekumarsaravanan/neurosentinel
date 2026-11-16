@@ -44,13 +44,19 @@ with c2:
                            help="Seizure detectors are patient-specific: each patient's seizures look different.")
     if name and name in [r for p in PATIENTS.values() for r in p["train"]] and patient == patient_of(name):
         st.info("This recording was part of the training set for that patient, so results will be optimistic.", icon=":material/info:")
-    go_btn = st.button("Scan recording", icon=":material/play_arrow:", type="primary", use_container_width=True, disabled=name is None)
+    go_btn = st.button("Scan recording", icon=":material/play_arrow:", type="primary", width="stretch", disabled=name is None)
 
 if go_btn and name:
     bar = st.progress(0, "Reading EDF…")
     t_start = time.perf_counter()
-    rec = read_edf(up.getvalue() if up else edf_path(name))
-    x = select_channels(rec, CHANNELS)
+    try:
+        rec = read_edf(up.getvalue() if up else edf_path(name))
+        x = select_channels(rec, CHANNELS)
+    except (ValueError, IndexError, UnicodeDecodeError) as exc:
+        bar.empty()
+        st.error(f"This file can't be scanned: it must be an EDF recording that contains the 18 bipolar channels of the "
+                 f"CHB-MIT montage at one sampling rate. Details: {exc}", icon=":material/error:")
+        st.stop()
     bar.progress(15, "Filtering: 60 Hz notch + 0.5–40 Hz band-pass…")
     x = preprocess(x)
     starts = window_starts(x.shape[1], FS)
@@ -127,11 +133,11 @@ fig.update_layout(title="Model output per second (dotted boxes: detected events)
 fig.update_xaxes(title="minutes"); fig.update_yaxes(title="P(seizure)", range=[-0.02, 1.12])
 fig = ui.style(fig, 380)
 fig.update_layout(legend=dict(y=-0.22, yanchor="top", x=0.5, xanchor="center"))
-st.plotly_chart(fig, use_container_width=True, theme=None)
+st.plotly_chart(fig, width="stretch", theme=None)
 
 if rows:
     st.markdown("#### Detected events")
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 else:
     st.success("No seizure events detected in this recording.", icon=":material/check_circle:")
 
@@ -177,4 +183,4 @@ hr{{border:0;border-top:1px solid #161616;margin:14px 0 18px}}</style></head><bo
 <p><small>Alarm rule: a model alarms when 3 of the last 4 one-second decisions exceed 50 %; an event is declared when at least two of the
 three models alarm. This is a course research prototype, <b>not a medical device</b>.</small></p></body></html>"""
 st.download_button("Download report (HTML)", report, icon=":material/download:", file_name=f"neurosentinel_{dx['name']}.html", mime="text/html",
-                   use_container_width=False)
+                   width="content")

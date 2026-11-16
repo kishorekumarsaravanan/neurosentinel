@@ -1,7 +1,7 @@
-# 🧠 NeuroSentinel: EEG Seizure Detection Observatory
+# NeuroSentinel: EEG seizure detection
 
 Binary EEG classification (seizure vs non-seizure) on the **CHB-MIT Scalp EEG** dataset, comparing a traditional,
-an ensemble and a deep-learning model, presented through an interactive, story-driven Streamlit app.
+an ensemble and a deep-learning model, presented through an interactive Streamlit app.
 
 | Category | Model | Input |
 |---|---|---|
@@ -13,23 +13,44 @@ an ensemble and a deep-learning model, presented through an interactive, story-d
 
 ```bash
 pip install -r requirements.txt
-bash scripts/download_data.sh      # ~890 MB: chb01 + chb03 (21 one-hour EDF files)
-python train.py                    # ~5–10 min on CPU: trains, evaluates, exports artifacts/
-streamlit run streamlit_app.py
+streamlit run streamlit_app.py     # trained models ship in artifacts/, so the app runs immediately
 ```
+
+Optional:
+
+```bash
+bash scripts/download_data.sh      # ~890 MB raw EEG (chb01 + chb03): needed by Brain Atlas, Signal Lab, Explainability, Diagnose
+python train.py                    # ~7 min on CPU: retrain, re-evaluate, rewrite artifacts/
+```
+
+## Documentation
+
+- [User guide](docs/USER_GUIDE.md): installation, every page step by step, metrics, troubleshooting
+- [Developer guide](docs/DEVELOPER_GUIDE.md): architecture, data flow, theming, adding pages/components, tests, workflow
 
 ## The app
 
 | Section | Page | What it does |
 |---|---|---|
-| Discover | 🌩️ **Prologue · The Storm** | Kuramoto-oscillator "brain": raise neural coupling and watch 160 neurons hypersynchronise into a seizure-like EEG |
-| | 🧭 **Brain Atlas** | Brain-weather ribbon of a full hour, animated scalp time-lapse of the seizure spreading, 18-channel EEG reader |
-| | 🧪 **Signal Lab** | Live filter playground (band-pass / notch / order), PSD, spectrogram, windowing, per-window "feature DNA" |
-| Detect | 🚨 **Live Seizure Monitor** | ICU-style replay of unseen seizures: scrolling EEG, live cortical heat map, three AI sentinels, consensus alarm + siren, AI commentary, sonification |
-| | 🎯 **Seizure Hunter** | Game: spot seizures in real EEG faster than the three models; scored and ranked |
-| | 🩺 **Diagnose** | Upload any EDF → second-by-second verdicts → downloadable HTML seizure report |
-| Understand | ⚔️ **Model Arena** | Fighter cards, radar chart, scorecard, confusion matrices, ROC/PR, seizure-by-seizure latency race, accuracy paradox, live alarm tuning, CNN training curves |
-| | 🔬 **X-Ray** | Occlusion brain maps per model, CNN gradient×input saliency, Random Forest importance sunburst |
+| Discover | **Overview** | Project summary, dot-matrix EEG figure, Kuramoto-oscillator simulation of hypersynchrony |
+| | **Brain Atlas** | Channel-activity map of a full hour, animated scalp time-lapse of the seizure spreading, 18-channel EEG pages |
+| | **Signal Lab** | Interactive filtering (band-pass, notch, order), PSD, spectrogram, windowing, per-window feature vector |
+| Detect | **Live Monitor** | Clinical review-station replay of held-out seizures: scrolling EEG, scalp map, three model cards, consensus alarm, assessment line, sonification |
+| | **Seizure Hunter** | Game: spot seizures in real EEG faster than the three models; scored and ranked |
+| | **Diagnose** | Upload an EDF → per-second model output → detected events → downloadable HTML report |
+| Evaluate | **Model Comparison** | Model cards, performance profile, scorecard, confusion matrices, ROC/PR, detection latency, accuracy paradox, alarm tuning, CNN training curves |
+| | **Explainability** | Occlusion head maps per model, CNN gradient × input saliency, random-forest feature importance |
+
+## Testing
+
+```bash
+pip install -r requirements-dev.txt
+pytest -v
+```
+
+47 tests: unit tests for the EDF reader, filters, features, models, metrics and alarm logic, plus Streamlit smoke
+tests that open every page in light and dark mode. Tests that need the raw EEG are skipped when `data/raw` is empty.
+GitHub Actions runs the suite on every pull request (`.github/workflows/tests.yml`).
 
 ## Method
 
@@ -78,6 +99,14 @@ nsapp/components custom HTML/Canvas/WebAudio components (monitor, game, hypersyn
 nsapp/assets     logo and mark (wordmark drawn from Newsreader glyph outlines)
 static/fonts     self-hosted Newsreader, IBM Plex Sans, IBM Plex Mono
 artifacts/       generated: models, results.json, predictions, demo clips
+tests/           pytest suite (unit + Streamlit smoke tests)
+docs/            user guide and developer guide
+.github/         CI workflow (pytest on every pull request)
 ```
+
+## Contributing
+
+Work on a branch, run `pytest`, open a pull request; CI must pass and a teammate reviews before merging into `main`.
+See the [developer guide](docs/DEVELOPER_GUIDE.md#6-workflow).
 
 *Research prototype for a BCI course project. Not a medical device.*

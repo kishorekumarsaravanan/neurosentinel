@@ -60,7 +60,7 @@ fig.update_yaxes(title="µV", row=1, col=1)
 fig.update_yaxes(title="dB", row=1, col=2)
 fig = ui.style(fig, 380)
 fig.update_layout(legend=dict(y=-0.28, yanchor="top", x=0.5, xanchor="center"))
-st.plotly_chart(fig, use_container_width=True, theme=None)
+st.plotly_chart(fig, width="stretch", theme=None)
 
 st.markdown("#### 2 · Time–frequency view")
 f_s, t_s, S = sps.spectrogram(x_f, FS, nperseg=FS, noverlap=int(FS * 0.75))
@@ -72,7 +72,7 @@ for s, e in sz:
 fig.update_layout(title=f"Spectrogram of {ch}, 60 s around the focus (dotted box: annotated seizure)")
 fig.update_yaxes(title="Hz")
 fig.update_xaxes(title="s", range=[seg0 / FS, seg1 / FS])
-st.plotly_chart(ui.style(fig, 300, legend=False), use_container_width=True, theme=None)
+st.plotly_chart(ui.style(fig, 300, legend=False), width="stretch", theme=None)
 
 st.markdown("#### 3 · Segmentation")
 st.caption("Background windows are taken without overlap; seizure windows slide by 1 s (75 % overlap) during training to "
@@ -85,7 +85,7 @@ for s in np.arange(seg0 / FS, seg1 / FS - 4, 4):
     col = ui.SEIZURE if frac >= 0.5 else ui.FILL_MUTED2
     fig.add_shape(type="rect", x0=s + 0.05, x1=s + 3.95, y0=-amp * 1.25, y1=-amp * 1.1, fillcolor=col, opacity=0.8, line_width=0)
 fig.update_xaxes(title="s"); fig.update_yaxes(visible=False)
-st.plotly_chart(ui.style(fig, 230, legend=False), use_container_width=True, theme=None)
+st.plotly_chart(ui.style(fig, 230, legend=False), width="stretch", theme=None)
 
 st.markdown("#### 4 · Feature vector of one window")
 clean = ui.clean_signal(rec)
@@ -105,7 +105,7 @@ with c1:
     fig.update_layout(title=f"Deviation from background, {ch} (|z|)",
                       polar=dict(radialaxis=dict(range=[0, 6], gridcolor=ui.GRID_STRONG, tickfont=dict(size=8, family="IBM Plex Mono")),
                                  angularaxis=dict(tickfont=dict(size=9.5, color=ui.INK2), gridcolor=ui.GRID, linecolor=ui.LINE_STRONG)))
-    st.plotly_chart(ui.style(fig, 470, legend=False, margin=dict(l=70, r=70, t=64, b=30)), use_container_width=True, theme=None)
+    st.plotly_chart(ui.style(fig, 470, legend=False, margin=dict(l=70, r=70, t=64, b=30)), width="stretch", theme=None)
 with c2:
     heat = (F - B.mean(0)) / (B.std(0) + 1e-6)
     fig = go.Figure(go.Heatmap(z=np.clip(heat, -6, 6), x=nice, y=ui.CHANNELS, zmid=0, colorscale=ui.scale(ui.DIVERGING),
@@ -113,6 +113,6 @@ with c2:
     fig.update_layout(title="All 18 channels × 21 features (z-scores against background)")
     fig.update_yaxes(autorange="reversed", tickfont=dict(family="IBM Plex Mono", size=9))
     fig.update_xaxes(tickfont=dict(size=9), tickangle=-50)
-    st.plotly_chart(ui.style(fig, 470, legend=False), use_container_width=True, theme=None)
+    st.plotly_chart(ui.style(fig, 470, legend=False), width="stretch", theme=None)
 st.caption("Red: far above this patient's normal background; blue: far below. During a seizure, line length, variance "
            "and low-frequency power rise sharply while spectral entropy falls, because the signal becomes rhythmic and predictable.")
