@@ -13,7 +13,8 @@ from conftest import needs_artifacts, needs_data
 ARTIFACT_PAGES = ["monitor", "game", "arena"]
 DATA_PAGES = ["prologue", "atlas", "signal_lab", "xray", "diagnose"]
 # absolute path: newer Streamlit resolves relative AppTest paths against the calling test file, not the cwd
-ENTRY = str(Path(__file__).resolve().parents[1] / "streamlit_app.py")
+ROOT = Path(__file__).resolve().parents[1]
+ENTRY = str(ROOT / "streamlit_app.py")
 
 
 def run_page(name: str, theme: str) -> AppTest:
@@ -52,9 +53,12 @@ def test_data_pages_render(page, theme):
 def test_model_comparison_scope_switch():
     at = run_page("arena", "light")
     assert any("4/4 seizures" in m.value for m in at.markdown)       # both patients: 4 test seizures
-    at.button_group[0].set_value(["chb03"]).run()   # single-select control: value passed as a list
-    assert_clean(at)
-    assert any("2/2 seizures" in m.value for m in at.markdown)       # one patient: 2 test seizures
+    # select one patient through the ?scope= link (widget simulation differs between Streamlit versions)
+    one = AppTest.from_file(str(ROOT / "nsapp" / "views" / "arena.py"), default_timeout=180)
+    one.query_params["scope"] = "chb03"
+    one.run()
+    assert_clean(one)
+    assert any("2/2 seizures" in m.value for m in one.markdown)      # one patient: 2 test seizures
 
 
 @pytest.mark.app

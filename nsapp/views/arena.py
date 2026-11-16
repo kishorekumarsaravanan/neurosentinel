@@ -17,7 +17,9 @@ ui.need_artifacts()
 R = ui.results()
 KEYS = ["svm", "rf", "cnn"]
 patients = list(R["patients"])
-scope = st.segmented_control("Scope", ["All patients"] + patients, default="All patients") or "All patients"
+options = ["All patients"] + patients
+requested = st.query_params.get("scope")           # e.g. ?scope=chb03 opens one patient directly
+scope = st.segmented_control("Scope", options, default=requested if requested in options else "All patients") or "All patients"
 
 
 def M(k):
